@@ -13,6 +13,7 @@ import net.minecraft.item.crafting.IRecipeSerializer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -58,6 +59,10 @@ public class RegistrationHelper {
       throw new IllegalArgumentException("Cannot register a null object");
     if (object.getRegistryName() == null)
       throw new IllegalArgumentException("Cannot register an object without a registry name");
+
+    if (object instanceof IProvideEvent) {
+      MinecraftForge.EVENT_BUS.register(object);
+    }
 
     getModData().modDefers.put(object.getRegistryType(), () -> object);
   }
