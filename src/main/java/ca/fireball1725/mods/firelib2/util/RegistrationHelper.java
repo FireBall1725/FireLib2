@@ -64,6 +64,10 @@ public class RegistrationHelper {
       MinecraftForge.EVENT_BUS.register(object);
     }
 
+    if (object instanceof IProvideRecipe) {
+      FireLib2.LOGGER.info(">>> I Provide a recipe (" + object.getRegistryName() + ")");
+    }
+
     getModData().modDefers.put(object.getRegistryType(), () -> object);
   }
 
