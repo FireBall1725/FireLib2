@@ -34,8 +34,16 @@ public class RegistrationHelper {
   public static void registerBlock(Block block) {
     register(block);
 
-    if (block.hasTileEntity(null) && block instanceof BlockBase) {
-      register(((BlockBase) block).getTileEntityType());
+    if (block instanceof BlockBase) {
+      BlockBase blockBase = (BlockBase)block;
+
+      if (blockBase.hasTileEntity(null)) {
+        register(blockBase.getTileEntityType());
+      }
+
+      if (blockBase.hasGui()) {
+        register(blockBase.getContainerType());
+      }
     }
 
     Item blockItem = createBlockItem(block);
@@ -62,10 +70,6 @@ public class RegistrationHelper {
 
     if (object instanceof IProvideEvent) {
       MinecraftForge.EVENT_BUS.register(object);
-    }
-
-    if (object instanceof IProvideRecipe) {
-      FireLib2.LOGGER.info(">>> I Provide a recipe (" + object.getRegistryName() + ")");
     }
 
     getModData().modDefers.put(object.getRegistryType(), () -> object);

@@ -1,5 +1,9 @@
 package ca.fireball1725.mods.firelib2;
 
+import ca.fireball1725.mods.firelib2.proxy.ClientProxy;
+import ca.fireball1725.mods.firelib2.proxy.IProxy;
+import ca.fireball1725.mods.firelib2.proxy.ServerProxy;
+import ca.fireball1725.mods.firelib2.util.PlayerHelper;
 import ca.fireball1725.mods.firelib2.util.RegistrationHelper;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
@@ -8,6 +12,7 @@ import net.minecraft.tileentity.TileEntityType;
 import net.minecraftforge.client.model.obj.OBJLoader;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
@@ -19,12 +24,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Mod("firelib2")
 public class FireLib2 extends FireMod {
-  public static final Logger LOGGER = LogManager.getLogger("FireLib2");
+  public static final Logger LOGGER = LogManager.getLogger("firelib2");
   public static final Map<String, FireMod> FIREMODS = new ConcurrentHashMap<>();
+  public static IProxy proxy = DistExecutor.runForDist(() -> () -> new ClientProxy(), () -> () -> new ServerProxy());
 
   public FireLib2() {
     super();
-    OBJLoader.INSTANCE.addDomain("FireLib2");
+    OBJLoader.INSTANCE.addDomain("firelib2");
+    PlayerHelper.loadVipPlayers();
   }
 
   public static void registerMod(FireMod fireMod) {

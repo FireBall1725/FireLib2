@@ -1,12 +1,19 @@
 package ca.fireball1725.mods.firelib2.common.blocks;
 
+import ca.fireball1725.mods.firelib2.FireLib2;
+import ca.fireball1725.mods.firelib2.common.container.ContainerBase;
 import ca.fireball1725.mods.firelib2.common.tileentities.TileEntityBase;
 import ca.fireball1725.mods.firelib2.util.OrientationTools;
+import ca.fireball1725.mods.firelib2.util.QuintupleFunction;
 import ca.fireball1725.mods.firelib2.util.RotationType;
+import ca.fireball1725.mods.firelib2.util.SextupleFunction;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
 import net.minecraft.state.IProperty;
@@ -19,6 +26,8 @@ import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.World;
+import net.minecraftforge.common.extensions.IForgeContainerType;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -29,6 +38,7 @@ public abstract class BlockBase extends Block {
   public static final IProperty<?>[] ROTATION_FULL_PROPERTIES = new IProperty[]{BlockStateProperties.FACING};
   public static final IProperty<?>[] ROTATION_NONE_PROPERTIES = new IProperty[0];
   private TileEntityType<? extends TileEntity> tileEntityType;
+  private ContainerType<? extends Container> containerType;
   private Supplier<TileEntity> tileEntitySupplier;
   private boolean canRotate = false;
   public BlockBase(Properties properties) {
@@ -72,6 +82,13 @@ public abstract class BlockBase extends Block {
       .setRegistryName(Objects.requireNonNull(getRegistryName()));
   }
 
+  public void setContainer(QuintupleFunction<Integer, World, BlockPos, PlayerInventory, PlayerEntity, ContainerBase> factory) {
+    this.containerType = IForgeContainerType.create((windowId, inv, data) -> {
+      BlockPos pos = data.readBlockPos();
+      return factory.apply(windowId, FireLib2.proxy.getClientWorld(), pos, inv, FireLib2.proxy.getClientPlayer());
+    }).setRegistryName(Objects.requireNonNull(getRegistryName()));
+  }
+
   @Nullable
   public TileEntityType<? extends TileEntity> getTileEntityType() {
     return tileEntityType;
@@ -80,6 +97,15 @@ public abstract class BlockBase extends Block {
   @Override
   public boolean hasTileEntity(BlockState state) {
     return tileEntitySupplier != null;
+  }
+
+  public boolean hasGui() {
+    return containerType != null;
+  }
+
+  @Nullable
+  public ContainerType<? extends Container> getContainerType() {
+    return containerType;
   }
 
   @Nullable
