@@ -52,6 +52,6 @@ public abstract class ContainerBase extends Container {
     addSlotBox(playerInventory, 9, x, y, 9, 18, 3, 18);
 
     // Hotbar
-    addSlotRange(playerInventory, 0, x, y, 9, 18);
+    addSlotRange(playerInventory, 0, x, y + 58, 9, 18);
   }
 }

@@ -6,30 +6,42 @@ import ca.fireball1725.mods.firelib2.common.blocks.BlockBase;
 import ca.fireball1725.mods.firelib2.common.blocks.IBlockItemProvider;
 import ca.fireball1725.mods.firelib2.common.blocks.IItemPropertiesFiller;
 import com.google.common.collect.ArrayListMultimap;
+import javafx.stage.Screen;
 import net.minecraft.block.Block;
+import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.crafting.IRecipeSerializer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class RegistrationHelper {
   private static final Map<String, ModRegistrationData> MODDATAMAP = new ConcurrentHashMap<>();
+
+  @OnlyIn(Dist.CLIENT)
+  public static void registerScreen(BlockBase block) {
+    getModData().guiBlocks.add(block);
+  }
+
+  public static void onLoadCompleteEvent(FMLLoadCompleteEvent event) {
+    getModData().loadComplete(event);
+  }
 
   public static void registerBlock(Block block) {
     register(block);
@@ -42,7 +54,10 @@ public class RegistrationHelper {
       }
 
       if (blockBase.hasGui()) {
-        register(blockBase.getContainerType());
+        registerScreen(blockBase);
+
+        if (blockBase.getContainerType() != null)
+          register(blockBase.getContainerType());
       }
     }
 
@@ -84,6 +99,7 @@ public class RegistrationHelper {
       data = new ModRegistrationData(mod.getLogger());
       MODDATAMAP.put(mod.getModId(), data);
       mod.getEventBus().addListener(RegistrationHelper::onRegistryEvent);
+      FMLJavaModLoadingContext.get().getModEventBus().addListener(RegistrationHelper::onLoadCompleteEvent);
     }
 
     return data;
@@ -92,6 +108,7 @@ public class RegistrationHelper {
   public static void onRegistryEvent(RegistryEvent.Register<?> event) {
     getModData().register(event.getRegistry());
   }
+
 
   private static Item createBlockItem(Block block) {
     Item.Properties itemProperties = new Item.Properties();
@@ -111,6 +128,7 @@ public class RegistrationHelper {
   private static class ModRegistrationData {
     final Logger modLogger;
     final ArrayListMultimap<Class<?>, Supplier<IForgeRegistryEntry<?>>> modDefers = ArrayListMultimap.create();
+    private ArrayList<BlockBase> guiBlocks = new ArrayList<>();
 
     ModRegistrationData(Logger logger) {
       this.modLogger = logger;
@@ -129,6 +147,14 @@ public class RegistrationHelper {
           modLogger.debug("Registered {}", entry.getRegistryName());
         });
       }
+    }
+
+    void loadComplete(FMLLoadCompleteEvent event) {
+      DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> loadCompleteClient(event));
+    }
+
+    private void loadCompleteClient(FMLLoadCompleteEvent event) {
+      guiBlocks.forEach((block) -> ScreenManager.registerFactory(block.getContainerType(), block.getScreenFactory()));
     }
   }
 }

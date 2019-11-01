@@ -1,6 +1,7 @@
 package ca.fireball1725.mods.firelib2.common.blocks;
 
 import ca.fireball1725.mods.firelib2.FireLib2;
+import ca.fireball1725.mods.firelib2.client.gui.ScreenBase;
 import ca.fireball1725.mods.firelib2.common.container.ContainerBase;
 import ca.fireball1725.mods.firelib2.common.tileentities.TileEntityBase;
 import ca.fireball1725.mods.firelib2.util.OrientationTools;
@@ -9,6 +10,11 @@ import ca.fireball1725.mods.firelib2.util.RotationType;
 import ca.fireball1725.mods.firelib2.util.SextupleFunction;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.gui.IHasContainer;
+import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -27,6 +33,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.extensions.IForgeContainerType;
 
 import javax.annotation.Nullable;
@@ -40,6 +48,8 @@ public abstract class BlockBase extends Block {
   private TileEntityType<? extends TileEntity> tileEntityType;
   private ContainerType<? extends Container> containerType;
   private Supplier<TileEntity> tileEntitySupplier;
+  @OnlyIn(Dist.CLIENT)
+  private ScreenManager.IScreenFactory screenFactory;
   private boolean canRotate = false;
   public BlockBase(Properties properties) {
     super(properties);
@@ -82,11 +92,21 @@ public abstract class BlockBase extends Block {
       .setRegistryName(Objects.requireNonNull(getRegistryName()));
   }
 
-  public void setContainer(QuintupleFunction<Integer, World, BlockPos, PlayerInventory, PlayerEntity, ContainerBase> factory) {
+  public void setGuiContainer(QuintupleFunction<Integer, World, BlockPos, PlayerInventory, PlayerEntity, ContainerBase> guiContainer) {
     this.containerType = IForgeContainerType.create((windowId, inv, data) -> {
       BlockPos pos = data.readBlockPos();
-      return factory.apply(windowId, FireLib2.proxy.getClientWorld(), pos, inv, FireLib2.proxy.getClientPlayer());
+      return guiContainer.apply(windowId, FireLib2.proxy.getClientWorld(), pos, inv, FireLib2.proxy.getClientPlayer());
     }).setRegistryName(Objects.requireNonNull(getRegistryName()));
+  }
+
+  @OnlyIn(Dist.CLIENT)
+  protected <C extends Container, S extends Screen & IHasContainer<C>> void setGuiScreen(ScreenManager.IScreenFactory<C, S> factory) {
+    this.screenFactory = factory;
+  }
+
+  @OnlyIn(Dist.CLIENT)
+  public ScreenManager.IScreenFactory getScreenFactory() {
+    return this.screenFactory;
   }
 
   @Nullable
@@ -100,7 +120,7 @@ public abstract class BlockBase extends Block {
   }
 
   public boolean hasGui() {
-    return containerType != null;
+    return screenFactory != null;
   }
 
   @Nullable
